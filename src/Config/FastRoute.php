@@ -19,17 +19,12 @@ class FastRoute extends SingleValueDirectiveGroup
      * @param null $action  string  Action Middleware class name
      * @param int $method
      */
-    public function __construct($identifier, $route, string $action = null, $method = self::GET)
+    public function __construct($identifier, $route, $action = null, $method = self::GET)
     {
 
         if(is_null($action))
         {
             throw new Exception(sprintf('Action cannot be null (route "%s")', $identifier));
-        }
-
-        if(!class_exists($action))
-        {
-            throw new Exception(sprintf('Unknown action class "%s" (route "%s")', $action, $identifier));
         }
 
         if(is_int($method))

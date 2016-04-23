@@ -6,6 +6,7 @@ use FastRoute\Dispatcher;
 use FastRoute\RouteCollector;
 use ObjectivePHP\Application\ApplicationInterface;
 use ObjectivePHP\Application\Middleware\ActionMiddleware;
+use ObjectivePHP\Application\Middleware\EmbeddedMiddleware;
 use ObjectivePHP\Invokable\Invokable;
 use ObjectivePHP\Package\FastRoute\Config\FastRoute;
 use Zend\Diactoros\Response\TextResponse;
@@ -38,7 +39,7 @@ class FastRoutePackage
     {
 
         $app->getStep($this->getRoutingStep())->plug([$this, 'route'])->as('router');
-        $app->getStep($this->getDispatchingStep())->plug([$this, 'dispatch'])->as('dispatcher');
+        $app->getStep($this->getRoutingStep())->plug([$this, 'dispatch'])->as('dispatcher');
 
     }
 
@@ -63,6 +64,7 @@ class FastRoutePackage
     {
         // Fetch method and URI from somewhere
         $httpMethod = $app->getRequest()->getMethod();
+        
         $uri = $_SERVER['REQUEST_URI'];
 
         // Strip query string (?foo=bar) and decode URI
@@ -73,9 +75,7 @@ class FastRoutePackage
 
         $routeInfo = $this->dispatcher->dispatch($httpMethod, $uri);
         switch ($routeInfo[0]) {
-            case Dispatcher::NOT_FOUND:
-                return new TextResponse('Page not found', 404);
-                break;
+
             case Dispatcher::METHOD_NOT_ALLOWED:
                 $allowedMethods = $routeInfo[1];
                 return new TextResponse(sprintf('Requested method is not allowed. Please use one of "%s"', implode(', ', $allowedMethods)), 405);
@@ -83,11 +83,28 @@ class FastRoutePackage
             case Dispatcher::FOUND:
                 $handler = $routeInfo[1];
                 $vars = $routeInfo[2];
+
+                $app->getRequest()->getParameters()->setRoute($vars);
+
                 $actionMiddleware = new ActionMiddleware(Invokable::cast($handler));
-                $serviceId = str_replace('\\', '.', $handler);
+
+                if(is_string($handler))
+                {
+                    $serviceId = str_replace('\\', '.', $handler);
+                } else {
+                    $serviceId = 'current.action';
+                }
+                
                 $app->getStep('action')->plug($actionMiddleware);
+                
                 $app->setParam('runtime.action.middleware', $actionMiddleware);
                 $app->setParam('runtime.action.service-id', $serviceId);
+                break;
+
+            case Dispatcher::NOT_FOUND:
+            default:
+                return new TextResponse('Page not found', 404);
+                exit;
                 break;
         }
 
