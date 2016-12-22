@@ -11,6 +11,7 @@ class FastRoute extends SingleValueDirectiveGroup
     const POST = 2;
     const PUT = 4;
     const DELETE = 8;
+    const PATCH = 16;
     const RESTFUL = self::GET | self::POST | self::PUT | self::DELETE;
 
     /**
@@ -47,7 +48,7 @@ class FastRoute extends SingleValueDirectiveGroup
     {
         $methods = [];
 
-        foreach ([1 => 'GET', 2 => 'POST', 4 => 'PUT', 8 => 'DELETE'] as $id => $method)
+        foreach ([1 => 'GET', 2 => 'POST', 4 => 'PUT', 8 => 'DELETE', 16 => 'PATCH'] as $id => $method)
         {
             if($flag & $id) $methods[] = $method;
         }
