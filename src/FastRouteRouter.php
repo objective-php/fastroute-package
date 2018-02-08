@@ -28,7 +28,12 @@ class FastRouteRouter implements RouterInterface
         $dispatcher = \FastRoute\simpleDispatcher(function(RouteCollector $collector) use ($routes) {
             foreach($routes as $id => $data)
             {
-                $collector->addRoute($data['method'], $data['route'], $data['handler']);
+                $collector->addRoute($data['method'], $data['route'], function () use ($id, $data){
+                    return [
+                        $id,
+                        $data['handler']
+                    ];
+                });
             }
         });
 
@@ -48,12 +53,10 @@ class FastRouteRouter implements RouterInterface
         switch ($routeInfo[0]) {
 
             case Dispatcher::FOUND:
-                $handler = $routeInfo[1];
+                $handler = $routeInfo[1]();
                 $vars = $routeInfo[2];
 
-                // FastRoute does not allow to name routes for further reference,
-                // so we name matched route "anonymous" by default
-                $matchedRoute = new MatchedRoute($this, 'anonymous', $handler, $vars);
+                $matchedRoute = new MatchedRoute($this, $handler[0], $handler[1], $vars);
 
                 return new RoutingResult($matchedRoute);
                 break;
